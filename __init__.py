@@ -1,12 +1,18 @@
-from parser import Parser as parser
+from parser import Parser
 import sys
 
-def parseIns(ins, f):
+def parseIns(ins, parser):
 	'''
 	ins - The integer from the read-in bytes
 	f - BufferedReader to read in more bytes if necessary
+	i - offset - read from this offset in the byte memory
 
 	Performs an action depending on the instruction
+	
+	Return -1: Function not yet implemented error
+	Return 0: Halt execution and terminate program
+	Return 1: Do nothing
+	Return 2: Instruction done correctly
 	'''
 	# halt: 0
 	# stop execution and terminate the program
@@ -14,9 +20,16 @@ def parseIns(ins, f):
 		return 0
 	# set: 1 a b
 	# set register <a> to the value of <b>
-	# TODO
 	elif ins == 1:
-		return -1
+		parser.offset += 1
+		a = parser.bytes[parser.offset]
+		if a > 32767:
+			a -= 32768
+			assert a >=0 and a <= 7
+		parser.offset += 1
+		b = parser.bytes[parser.offset]
+		parser.registers[a] = b
+		return 2
 	# push: 2 a
 	# push <a> onto the stack
 	# TODO
@@ -39,24 +52,61 @@ def parseIns(ins, f):
 		return -1
 	# jmp: 6 a
 	# jump to <a>
-	# TODO
 	elif ins == 6:
-		return -1
+		parser.offset += 1
+		a = parser.bytes[parser.offset]
+		parser.offset = a - 1
+		return 2
 	# jt: 7 a b
 	# if <a> is nonzero, jump to <b>
-	# TODO
 	elif ins == 7:
-		return -1
+		parser.offset += 1
+		a = parser.bytes[parser.offset]
+		if a > 32767:
+			a -= 32768
+			assert a >=0 and a <= 7
+			a = parser.registers[a]
+		parser.offset += 1
+		b = parser.bytes[parser.offset]
+		if a != 0:
+			parser.offset = b - 1
+		return 2
 	# jf: 8 a b
 	# if <a> is zero, jump to <b>
-	# TODO
 	elif ins == 8:
-		return -1
+		parser.offset += 1
+		a = parser.bytes[parser.offset]
+		if a > 32767:
+			a -= 32768
+			assert a >=0 and a <= 7
+			a = parser.registers[a]
+		parser.offset += 1
+		b = parser.bytes[parser.offset]
+		if a == 0:
+			parser.offset = b - 1
+		return 2
 	# add: 9 a b c
 	# assign into <a> the sum of <b> and <c> (modulo 32768)
-	# TODO
 	elif ins == 9:
-		return -1
+		parser.offset += 1
+		a = parser.bytes[parser.offset]
+		if a > 32767:
+			a -= 32768
+		assert a >=0 and a <= 7
+		parser.offset += 1
+		b = parser.bytes[parser.offset]
+		if b > 32767:
+			b -= 32768
+			assert b >=0 and b <= 7
+			b = parser.registers[b]
+		parser.offset += 1
+		c = parser.bytes[parser.offset]
+		if c > 32767:
+			c -= 32768
+			assert c >=0 and c <= 7
+			c = parser.registers[c]
+		parser.registers[a] = (b + c) % 32768
+		return 2
 	# mult: 10 a b c
 	# store into <a> the product of <b> and <c> (modulo 32768)
 	# TODO
@@ -104,9 +154,9 @@ def parseIns(ins, f):
 		return -1
 	# out: 19 a
 	# write the character represented by ascii code <a> to the terminal
-	# TODO
 	elif ins == 19:
-		c = chr(int.from_bytes(f.read(2), byteorder='little'))
+		parser.offset += 1
+		c = chr(parser.bytes[parser.offset])
 		print(c, end='')
 		return 2
 	# in: 20 a
@@ -121,19 +171,29 @@ def parseIns(ins, f):
 	else:
 		return -1
 
-def readloop(path):
+def readloop(path, parser):
+	i = 0
 	with open(path, 'rb') as f:
 		byte = int.from_bytes(f.read(2), byteorder='little')
-		while byte:
-			# TODO Do stuff
-			r = parseIns(byte, f)
-			if r < 0:
-				print('ERROR')
-				print('Exiting on instruction %s' % byte)
-				sys.exit(1)
-			if r == 0:
-				sys.exit()
+		last = 0
+		while last != f.tell():
+			parser.bytes.append(byte)
+			last = f.tell()
 			byte = int.from_bytes(f.read(2), byteorder='little')
 
+def executeLoop(parser):
+	while parser.offset < len(parser.bytes):
+		r = parseIns(parser.bytes[parser.offset], parser)
+		if r < 0:
+			print('ERROR')
+			print('Exiting on instruction %s' % parser.bytes[parser.offset])
+			sys.exit(1)
+		if r == 0:
+			sys.exit()
+		parser.offset += 1
+	print('End of instructions')
+
 if __name__ == '__main__':
-	readloop('challenge.bin')
+	p = Parser()
+	readloop('challenge.bin', p)
+	executeLoop(p)
