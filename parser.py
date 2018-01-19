@@ -11,4 +11,6 @@ class Parser:
 		self.bytes = []
 		# Offset to fetch instructions from bytes
 		self.offset = 0
+		# Input buffer
+		self.inputBuffer = ''
 	

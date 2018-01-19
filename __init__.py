@@ -210,13 +210,17 @@ def parseIns(ins, parser):
 	# it can be assumed that once input starts, it will continue until a 
 	# newline is encountered; this means that you can safely read whole 
 	# lines from the keyboard and trust that they will be fully read
-	# TODO
 	elif ins == 20:
 		parser.offset += 1
 		a = getRegisterIndex(parser)
-		for i in range(0, 5):
-			print(parser.bytes[parser.offset + i])
-		return -1
+		if not parser.inputBuffer:
+			buff = ''
+			while not buff:
+				buff = input('>>>')
+			parser.inputBuffer = buff + '\n'
+		parser.registers[a] = ord(parser.inputBuffer[0])
+		parser.inputBuffer = parser.inputBuffer[1:]
+		return 2
 	# noop: 21
 	# no operation
 	elif ins == 21:
