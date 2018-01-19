@@ -112,15 +112,26 @@ def parseIns(ins, parser):
 		return 2
 	# mult: 10 a b c
 	# store into <a> the product of <b> and <c> (modulo 32768)
-	# TODO
 	elif ins == 10:
-		
-		return -1
+		parser.offset += 1
+		a = getRegisterIndex(parser)
+		parser.offset += 1
+		b = getValueFromRegister(parser)
+		parser.offset += 1
+		c = getValueFromRegister(parser)
+		parser.registers[a] = (b * c) % 32768
+		return 2
 	# mod: 11 a b c
 	# store into <a> the remainder of <b> divided by <c>
-	# TODO
 	elif ins == 11:
-		return -1
+		parser.offset += 1
+		a = getRegisterIndex(parser)
+		parser.offset += 1
+		b = getValueFromRegister(parser)
+		parser.offset += 1
+		c = getValueFromRegister(parser)
+		parser.registers[a] = b % c
+		return 2
 	# and: 12 a b c
 	# stores into <a> the bitwise and of <b> and <c>
 	elif ins == 12:
@@ -157,14 +168,22 @@ def parseIns(ins, parser):
 		return 2
 	# rmem: 15 a b
 	# read memory at address <b> and write it to <a>
-	# TODO
 	elif ins == 15:
-		return -1
+		parser.offset += 1
+		a = getRegisterIndex(parser)
+		parser.offset += 1
+		b = getValueFromRegister(parser)
+		parser.registers[a] = parser.bytes[b]
+		return 2
 	# wmem: 16 a b
 	# write the value from <b> into memory at address <a>
-	# TODO
 	elif ins == 16:
-		return -1
+		parser.offset += 1
+		a = getValueFromRegister(parser)
+		parser.offset += 1
+		b = getValueFromRegister(parser)
+		parser.bytes[a] = b
+		return 2
 	# call: 17 a
 	# write the address of the next instruction to the stack and jump to <a>
 	elif ins == 17:
@@ -175,9 +194,9 @@ def parseIns(ins, parser):
 		return 2
 	# ret: 18
 	# remove the top element from the stack and jump to it; empty stack = halt
-	# TODO
 	elif ins == 18:
-		return -1
+		parser.offset = parser.stack.pop() - 1
+		return 2
 	# out: 19 a
 	# write the character represented by ascii code <a> to the terminal
 	elif ins == 19:
@@ -187,9 +206,16 @@ def parseIns(ins, parser):
 		print(c, end='')
 		return 2
 	# in: 20 a
-	# read a character from the terminal and write its ascii code to <a>; it can be assumed that once input starts, it will continue until a newline is encountered; this means that you can safely read whole lines from the keyboard and trust that they will be fully read
+	# read a character from the terminal and write its ascii code to <a>;
+	# it can be assumed that once input starts, it will continue until a 
+	# newline is encountered; this means that you can safely read whole 
+	# lines from the keyboard and trust that they will be fully read
 	# TODO
 	elif ins == 20:
+		parser.offset += 1
+		a = getRegisterIndex(parser)
+		for i in range(0, 5):
+			print(parser.bytes[parser.offset + i])
 		return -1
 	# noop: 21
 	# no operation
